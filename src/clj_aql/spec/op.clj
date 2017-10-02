@@ -1,0 +1,64 @@
+(ns clj-aql.spec.op
+  (:require [clojure.spec.alpha :as s]
+            [clj-aql.spec.fn]
+            [clojure.spec.gen.alpha :as gen]))
+
+(s/def ::primitive-operand (s/or :sym symbol?
+                                 :num number?
+                                 :bool boolean?))
+
+(s/def ::condition-op #{'== '!= '< '<= '> '>= :IN :NOT-IN :LIKE '&& '|| '!})
+
+(s/def ::primitive-condition (s/cat :op-first ::primitive-operand
+                                    :op ::condition-op
+                                    :op-second ::primitive-operand))
+
+(s/def ::condition
+  (s/alt :binary-op (s/cat :op-first ::primitive-condition
+                           :op ::condition-op
+                           :op-second ::primitive-condition)
+         :primitive ::primitive-condition))
+
+(defmulti high-level-op first)
+(s/def ::high-level-op (s/multi-spec high-level-op first))
+
+(s/def ::for-op (s/cat :name #{'FOR}
+                       :fields (s/coll-of symbol? :kind vector?)
+                       :in #{:IN}
+                       :collection string?
+                       :clauses (s/* ::high-level-op)))
+
+(s/def ::let-expr (s/or :fn :clj-aql.spec.fn/function
+                        :for-op ::for-op))
+
+(s/def ::expression (s/or :string string?
+                          :symbol symbol?
+                          :map (s/map-of keyword? ::expression)
+                          :fn :clj-aql.spec.fn/function))
+
+(s/def ::return-expr ::expression)
+
+(s/def ::return-op (s/cat :name #{'RETURN}
+                          :expression ::return-expr))
+
+(defmethod high-level-op 'FOR [_] ::for-op)
+(defmethod high-level-op 'RETURN [_] ::return-op)
+(defmethod high-level-op 'FILTER [_] (s/cat :name #{'FILTER}
+                                            :condition ::condition))
+(defmethod high-level-op 'SORT [_] (s/cat :name #{'SORT}
+                                          :expression (s/coll-of symbol? :kind vector?)
+                                          :direction (s/? #{:ASC :DESC})))
+(defmethod high-level-op 'LIMIT [_] (s/cat :name #{'LIMIT}
+                                           :offset (s/? int?)
+                                           :count int?))
+(defmethod high-level-op 'LET [_] (s/cat :name #{'LET}
+                                         :bindings (s/and
+                                                    vector?
+                                                    (s/* (s/cat :binding symbol?
+                                                                :expression ::let-expr)))))
+(defmethod high-level-op 'COLLECT [_] (s/cat :name #{'COLLECT}))
+(defmethod high-level-op 'REMOVE [_] (s/cat :name #{'REMOVE}))
+(defmethod high-level-op 'UPDATE [_] (s/cat :name #{'UPDATE}))
+(defmethod high-level-op 'REPLACE [_] (s/cat :name #{'REPLACE}))
+(defmethod high-level-op 'INSERT [_] (s/cat :name #{'INSERT}))
+(defmethod high-level-op 'UPSERT [_] (s/cat :name #{'UPSERT}))
