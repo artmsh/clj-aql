@@ -34,7 +34,8 @@
 (s/def ::expression (s/or :string string?
                           :symbol symbol?
                           :map (s/map-of keyword? ::expression)
-                          :fn :clj-aql.spec.fn/function))
+                          :fn :clj-aql.spec.fn/function
+                          :for-op ::for-op))
 
 (s/def ::return-expr ::expression)
 

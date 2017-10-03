@@ -5,7 +5,8 @@ Clojure language extension that provide idiomatic syntax for [ArangoDB](https://
 ## Usage
 
 ```clojure
-(require [clj-aql.core :refer :all])
+(require [clj-aql.core :refer :all]
+         [clj-aql.spec.macros])
 
 (FOR [u] :IN "users"
   (RETURN u.name))

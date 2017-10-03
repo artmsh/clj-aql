@@ -1,6 +1,7 @@
 (ns clj-aql.spec.macros
   (:require [clojure.spec.alpha :as s]
-            [clj-aql.core :as core]))
+            [clj-aql.core :as core]
+            [clojure.spec.test.alpha :as stest]))
 
 (s/fdef core/FOR
         :args (s/cat :fields (s/coll-of symbol? :kind vector?)
@@ -11,3 +12,5 @@
 (s/fdef core/RETURN
         :args (s/cat :expression :clj-aql.spec.op/return-expr)
         :ret string?)
+
+(stest/instrument [`core/FOR `core/RETURN])
