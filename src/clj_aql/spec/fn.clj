@@ -34,4 +34,10 @@
 (defmethod document-function 'MERGE [_] (s/cat :name #{'MERGE}
                                                :doc ::document))
 
+(defmethod document-function 'DOCUMENT [_] (s/cat :name #{'DOCUMENT}
+                                                  :collection (s/? string?)
+                                                  :id (s/or :str string?
+                                                            :sym symbol?
+                                                            :array (s/* string?))))
+
 (s/def ::function (s/multi-spec document-function first))
