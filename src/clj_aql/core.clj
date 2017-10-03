@@ -1,7 +1,8 @@
 (ns clj-aql.core
   (:require [clj-aql.spec.fn]
             [clj-aql.spec.op]
-            [clojure.spec.alpha :as s]))
+            [clojure.spec.alpha :as s]
+            [clojure.spec.test.alpha :as stest]))
 
 (defn expand-map [m value-fn]
   (str "{" (clojure.string/join ","
@@ -22,8 +23,6 @@
     (str name "(" (clojure.string/join "," (map expand-any args)) ")")))
 
 (defn expand-expression [[type val]]
-  (when (symbol? val)
-    (prn val))
   (case type
     :string (str "\"" val "\"")
     :symbol val
@@ -77,3 +76,5 @@
 
 (defmacro RETURN [& args]
   (expand-clause (s/conform :clj-aql.spec.op/return-op (cons 'RETURN args))))
+
+(stest/instrument [`FOR `RETURN])

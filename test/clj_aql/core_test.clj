@@ -1,10 +1,7 @@
 (ns clj-aql.core-test
   (:require [clojure.test :refer :all]
             [clj-aql.core :refer :all]
-            [clj-aql.spec.macros]
-            [clojure.spec.test.alpha :as stest]))
-
-(stest/instrument [`FOR `RETURN])
+            [clj-aql.spec.macros]))
 
 (deftest return-test
   (testing "simple return expression"
@@ -75,5 +72,3 @@
                             (RETURN m))])
              (RETURN {:user u :friends friends :numFriends (LENGTH friends) :memberShips memberships}))
           "FOR u IN users\nLET friends = (\nFOR f IN friends\nFILTER u.id == f.userId\nRETURN f\n)\nLET memberships = (\nFOR m IN memberships\nFILTER u.id == m.userId\nRETURN m\n)\nRETURN {\"user\":u,\"friends\":friends,\"numFriends\":LENGTH(friends),\"memberShips\":memberships}"))))
-
-(stest/unstrument [`FOR `RETURN])
