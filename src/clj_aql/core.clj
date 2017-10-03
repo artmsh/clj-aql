@@ -32,6 +32,7 @@
     :string (str "\"" val "\"")
     :symbol val
     :map (expand-map val expand-expression)
+    :map-s (expand-map val expand-expression)
     :fn (expand-fn val)
     :for-op (str "(" (expand-clause val) ")")
     val))
