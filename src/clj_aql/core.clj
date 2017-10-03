@@ -8,12 +8,16 @@
                                 (map (fn [[k v]] (str "\"" (name k) "\":" (value-fn v))) m))
        "}"))
 
+(declare expand-expression)
+
 (defn expand-any [v]
   (cond
     (map? v) (expand-map v expand-any)
     (symbol? v) v
     (keyword? v) (name v)
     (string? v) (str "\"" v "\"")
+    ; hack for fn args
+    (and (vector? v) (= (count v) 2) (keyword? (first v))) (expand-expression v)
     :else v))
 
 (defn expand-fn [fn]

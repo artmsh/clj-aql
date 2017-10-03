@@ -17,7 +17,7 @@
                                              :attribute-name string?))
 (defmethod document-function 'IS_SAME_COLLECTION [_] (s/cat :name #{'IS_SAME_COLLECTION}
                                                             :collection-name string?
-                                                            :document-handle (s/or :s string?
+                                                            :document-handle (s/or :string string?
                                                                                    :kw ::indexed-document)))
 (defmethod document-function 'KEEP [_] (s/cat :name #{'KEEP}
                                               :attribute-names (s/or :varargs (s/* string?)
@@ -36,8 +36,8 @@
 
 (defmethod document-function 'DOCUMENT [_] (s/cat :name #{'DOCUMENT}
                                                   :collection (s/? string?)
-                                                  :id (s/or :str string?
-                                                            :sym symbol?
+                                                  :id (s/or :string string?
+                                                            :symbol symbol?
                                                             :array (s/* string?))))
 
 (s/def ::function (s/multi-spec document-function first))
