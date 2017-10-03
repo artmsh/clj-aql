@@ -41,12 +41,12 @@
 
 (defn expand-operand [[type val]] (str val))
 (defn expand-primitive-condition [{:keys [op-first op op-second]}]
-  (str (expand-operand op-first) " " op " " (expand-operand op-second)))
+  (str (expand-operand op-first) " " (expand-any op) " " (expand-operand op-second)))
 
 (defn expand-condition [[condition-type condition]]
   (if (= condition-type :binary-op)
     (str (expand-primitive-condition (:op-first condition)) " "
-         (:op condition) " "
+         (expand-any (:op condition)) " "
          (expand-primitive-condition (:op-second condition)))
     (expand-primitive-condition condition)))
 
