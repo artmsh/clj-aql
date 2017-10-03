@@ -3,16 +3,19 @@
             [clj-aql.spec.op]
             [clojure.spec.alpha :as s]))
 
-(defn expand-map [m value-fn]
+(defn expand-map [m value-fn quote-key?]
   (str "{" (clojure.string/join ","
-                                (map (fn [[k v]] (str "\"" (name k) "\":" (value-fn v))) m))
+                                (map (fn [[k v]]
+                                       (let [key (if quote-key? (str "\"" (name k) "\"") k)]
+                                        (str key ":" (value-fn v))))
+                                     m))
        "}"))
 
 (declare expand-expression)
 
 (defn expand-any [v]
   (cond
-    (map? v) (expand-map v expand-any)
+    (map? v) (expand-map v expand-any true)
     (symbol? v) v
     (keyword? v) (name v)
     (string? v) (str "\"" v "\"")
@@ -31,8 +34,8 @@
   (case type
     :string (str "\"" val "\"")
     :symbol val
-    :map (expand-map val expand-expression)
-    :map-s (expand-map val expand-expression)
+    :map (expand-map val expand-expression true)
+    :map-s (expand-map val expand-expression false)
     :fn (expand-fn val)
     :for-op (str "(" (expand-clause val) ")")
     val))
