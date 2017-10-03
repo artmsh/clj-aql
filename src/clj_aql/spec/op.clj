@@ -5,7 +5,8 @@
 
 (s/def ::primitive-operand (s/or :sym symbol?
                                  :num number?
-                                 :bool boolean?))
+                                 :bool boolean?
+                                 :str string?))
 
 (s/def ::condition-op #{'== '!= '< '<= '> '>= :IN :NOT-IN :LIKE '&& '|| '!})
 
