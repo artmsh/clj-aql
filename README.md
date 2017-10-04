@@ -5,17 +5,18 @@ Clojure language extension that provide idiomatic syntax for [ArangoDB](https://
 ## Usage
 
 ```clojure
-(require [clj-aql.core :refer :all]
-         [clj-aql.spec.macros])
+(require [clj-aql.core :refer :all])
 
 (FOR [u] :IN "users"
   (RETURN u.name))
 ```
 
-`FOR` is a macro which expands to following string:
-```
-FOR u IN users
-  RETURN u.name
+`FOR` is a macro which expands to following structure:
+```clojure
+{:query
+"FOR u IN users
+RETURN u.name"
+:args {}}
 ```
 
 More documentation coming soon.

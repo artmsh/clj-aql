@@ -6,7 +6,8 @@
 (s/def ::primitive-operand (s/or :sym symbol?
                                  :num number?
                                  :bool boolean?
-                                 :str string?))
+                                 :str string?
+                                 :quoted (s/cat :q #{`unquote} :val any?)))
 
 (s/def ::condition-op #{'== '!= '< '<= '> '>= :IN :NOT-IN :LIKE '&& '|| '!})
 
@@ -59,7 +60,15 @@
                                                     vector?
                                                     (s/* (s/cat :binding symbol?
                                                                 :expression ::let-expr)))))
-(defmethod high-level-op 'COLLECT [_] (s/cat :name #{'COLLECT}))
+(defmethod high-level-op 'COLLECT [_] (s/cat :name #{'COLLECT}
+                                             :vars (s/and
+                                                     vector?
+                                                     (s/* (s/cat :variable-name symbol?
+                                                                 :expression ::expression)))
+                                             :into-clause (s/? (s/cat :into #{:INTO}
+                                                                      :groups-variable symbol?))
+                                             :keep-clause (s/? (s/cat :keep #{:KEEP}
+                                                                      :keep-variable symbol?))))
 (defmethod high-level-op 'REMOVE [_] (s/cat :name #{'REMOVE}))
 (defmethod high-level-op 'UPDATE [_] (s/cat :name #{'UPDATE}))
 (defmethod high-level-op 'REPLACE [_] (s/cat :name #{'REPLACE}))

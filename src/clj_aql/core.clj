@@ -1,7 +1,8 @@
 (ns clj-aql.core
   (:require [clj-aql.spec.fn]
             [clj-aql.spec.op]
-            [clojure.spec.alpha :as s]))
+            [clojure.spec.alpha :as s]
+            [clojure.spec.test.alpha :as stest]))
 
 (defn expand-map [m value-fn quote-key?]
   (str "{" (clojure.string/join ","
@@ -47,7 +48,10 @@
 (defmethod expand-clause 'RETURN [{:keys [expression]}]
   (str "RETURN " (expand-expression expression)))
 
-(defn expand-operand [[type val]] (str val))
+(defn expand-operand [[type val]]
+  (if (= type :quoted)
+    (str "@" (:val val))
+    (str val)))
 (defn expand-primitive-condition [{:keys [op-first op op-second]}]
   (str (expand-operand op-first) " " (expand-any op) " " (expand-operand op-second)))
 
@@ -78,11 +82,40 @@
                            (str "LET " binding " = (\n" result "\n)")))
     "\n"))
 
+(defmethod expand-clause 'COLLECT [{:keys [vars into-clause keep-clause]}]
+  (str "COLLECT " (clojure.string/join ","
+                                       (map #(str (:variable-name %) " = " (expand-expression (:expression %))) vars))
+       (if into-clause
+         (str " INTO " (:groups-variable into-clause))
+         "")
+       (if keep-clause
+         (str " KEEP " (:keep-variable keep-clause))
+         "")
+       "\n"))
+
 (defmethod expand-clause :default [_] "")
 
 (defmacro FOR [& args]
   (let [form (s/conform :clj-aql.spec.op/for-op (cons 'FOR args))]
-    (expand-clause form)))
+    {:query (expand-clause form)
+     :args (into {} (for [n (tree-seq coll? seq args)
+                    :when (and (coll? n) (= (first n) `unquote))]
+                  [(str (second n)) (second n)]))}))
 
 (defmacro RETURN [& args]
-  (expand-clause (s/conform :clj-aql.spec.op/return-op (cons 'RETURN args))))
+  {:query (expand-clause (s/conform :clj-aql.spec.op/return-op (cons 'RETURN args)))
+   :args (into {} (for [n (tree-seq coll? seq args)
+                    :when (and (coll? n) (= (first n) `unquote))]
+                [(str (second n)) (second n)]))})
+
+(s/fdef FOR
+        :args (s/cat :fields (s/coll-of symbol? :kind vector?)
+                     :in #{:IN}
+                     :collection string?
+                     :clauses (s/* :clj-aql.spec.op/high-level-op)))
+
+(s/fdef RETURN
+        :args (s/cat :expression :clj-aql.spec.op/return-expr)
+        :ret string?)
+
+(stest/instrument [`FOR `RETURN])
