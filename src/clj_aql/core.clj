@@ -33,7 +33,8 @@
 
 (defn expand-expression [[type val]]
   (case type
-    :string (str "\"" val "\"")
+    ;:string (str "\"" val "\"")
+    :string (symbol val)
     :symbol val
     :map (expand-map val expand-expression true)
     :map-s (expand-map val expand-expression false)
