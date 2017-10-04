@@ -69,8 +69,23 @@
 ; )
 ; RETURN {"user":u,"friends":friends,"numFriends":LENGTH(friends),"memberShips":memberships}
 
+(def taxon-type-id "weight")
+
 (deftest let-test
   (testing "let expression"
+    #_(is (=
+          (FOR [t] :IN (FOR [b] :IN "body"
+                         (LET [taxa (FOR [tx] :IN "b.taxa"
+                                      (LET [taxon (DOCUMENT "taxon" tx.taxon_id)])
+                                      (FILTER taxon.taxon_type_id == ~taxon-type-id)
+                                      (RETURN taxon))])
+                         (RETURN {:key "taxa[0].id" :body b.id}))
+            (FILTER t.key != null)
+            (LET [body "t.body"])
+            (COLLECT [vals t.key] :INTO objs :KEEP body)
+            (RETURN "objs[*].body"))
+          {:query ""
+           :args {"taxon-type-id" "weight"}}))
     (is (=
           (:query (FOR [u] :IN "users"
              (LET [friends (FOR [f] :IN "friends"
@@ -93,6 +108,6 @@
 (deftest collect-test
   (testing "collect expression"
     (is (= (:query (FOR [u] :IN "users"
-                     (COLLECT [city u.city])
+                     (COLLECT [city u.city] :INTO objs :KEEP body)
                      (RETURN { :city city })))
-           "FOR u IN users\nCOLLECT city = u.city\nRETURN {\"city\":city}"))))
+           "FOR u IN users\nCOLLECT city = u.city INTO objs KEEP body\nRETURN {\"city\":city}"))))

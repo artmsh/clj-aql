@@ -31,8 +31,11 @@
                                          :string string?)
                        :clauses (s/* ::high-level-op)))
 
-(s/def ::let-expr (s/or :fn :clj-aql.spec.fn/function
-                        :for-op ::for-op))
+(s/def ::let-expr (s/or
+                    :symbol symbol?
+                    :string string?
+                    :fn :clj-aql.spec.fn/function
+                    :for-op ::for-op))
 
 (s/def ::expression (s/or :string string?
                           :symbol symbol?

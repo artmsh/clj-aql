@@ -80,9 +80,11 @@
     (clojure.string/join "\n"
                          (for [{:keys [binding expression]} bindings
                                :let [[type val] expression
-                                     result (if (= type :for-op)
-                                           (expand-clause val)
-                                           (expand-fn val))]]
+                                     result (cond
+                                              (= type :for-op) (expand-clause val)
+                                              (= type :fn) (expand-fn val)
+                                              (= type :string) (symbol val)
+                                              :else val)]]
                            (str "LET " binding " = (\n" result "\n)")))
     "\n"))
 
