@@ -43,8 +43,12 @@
 
 (defmulti expand-clause :name)
 (defmethod expand-clause 'FOR [{:keys [fields collection clauses]}]
-  (apply str "FOR " (clojure.string/join "," fields) " IN " collection "\n"
-         (map expand-clause clauses)))
+  (let [coll (if (= :string (first collection))
+               (second collection)
+               (str "(" (expand-clause (second collection)) ")"))]
+    (apply str "FOR " (clojure.string/join "," fields) " IN " coll "\n"
+           (map expand-clause clauses))))
+
 (defmethod expand-clause 'RETURN [{:keys [expression]}]
   (str "RETURN " (expand-expression expression)))
 
@@ -96,7 +100,8 @@
 (defmethod expand-clause :default [_] "")
 
 (defmacro FOR [& args]
-  (let [form (s/conform :clj-aql.spec.op/for-op (cons 'FOR args))]
+  (let [form (s/conform :clj-aql.spec.op/for-op (cons 'FOR args))
+        _ (prn form)]
     {:query (expand-clause form)
      :args (into {} (for [n (tree-seq coll? seq args)
                     :when (and (coll? n) (= (first n) `unquote))]
@@ -111,7 +116,8 @@
 (s/fdef FOR
         :args (s/cat :fields (s/coll-of symbol? :kind vector?)
                      :in #{:IN}
-                     :collection string?
+                     :collection (s/or :for-op :clj-aql.spec.op/for-op
+                                       :string string?)
                      :clauses (s/* :clj-aql.spec.op/high-level-op)))
 
 (s/fdef RETURN

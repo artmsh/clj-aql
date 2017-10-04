@@ -27,7 +27,8 @@
 (s/def ::for-op (s/cat :name #{'FOR}
                        :fields (s/coll-of symbol? :kind vector?)
                        :in #{:IN}
-                       :collection string?
+                       :collection (s/or :for-op ::for-op
+                                         :string string?)
                        :clauses (s/* ::high-level-op)))
 
 (s/def ::let-expr (s/or :fn :clj-aql.spec.fn/function

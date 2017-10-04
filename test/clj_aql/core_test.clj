@@ -18,7 +18,11 @@
     (is (= (:query
              (FOR [u] :IN "users"
               (RETURN u.name)))
-           "FOR u IN users\nRETURN u.name"))))
+           "FOR u IN users\nRETURN u.name"))
+    (is (= (:query
+             (FOR [u] :IN (FOR [v] :IN "vendors" (RETURN v))
+               (RETURN u.name)))
+           "FOR u IN (FOR v IN vendors\nRETURN v)\nRETURN u.name"))))
 
 (defn query [vall]
   (FOR [u] :IN "users"
