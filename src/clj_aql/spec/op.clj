@@ -3,6 +3,11 @@
             [clj-aql.spec.fn]
             [clojure.spec.gen.alpha :as gen]))
 
+
+(s/def ::primitive-num (s/or
+                        :num number?
+                        :quoted (s/cat :q #{`unquote} :val any?)))
+
 (s/def ::primitive-operand (s/or :sym symbol?
                                  :num number?
                                  :bool boolean?
@@ -57,8 +62,8 @@
                                           :expression (s/coll-of symbol? :kind vector?)
                                           :direction (s/? #{:ASC :DESC})))
 (defmethod high-level-op 'LIMIT [_] (s/cat :name #{'LIMIT}
-                                           :offset (s/? int?)
-                                           :count int?))
+                                           :offset (s/? ::primitive-num)
+                                           :count ::primitive-num))
 (defmethod high-level-op 'LET [_] (s/cat :name #{'LET}
                                          :bindings (s/and
                                                     vector?

@@ -57,6 +57,7 @@
   (if (= type :quoted)
     (str "@" (:val val))
     (str val)))
+
 (defn expand-primitive-condition [{:keys [op-first op op-second]}]
   (str (expand-operand op-first) " " (expand-any op) " " (expand-operand op-second)))
 
@@ -74,7 +75,9 @@
   (str "SORT " (clojure.string/join "," expression) " " (name direction) "\n"))
 
 (defmethod expand-clause 'LIMIT [{:keys [offset count]}]
-  (str "LIMIT " (clojure.string/join "," (filter (complement nil?) [offset count])) "\n"))
+  (str "LIMIT " (clojure.string/join "," (->> [offset count]
+                                              (filter (complement nil?))
+                                              (map expand-operand))) "\n"))
 
 (defmethod expand-clause 'LET [{:keys [bindings]}]
   (str
