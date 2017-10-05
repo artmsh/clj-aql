@@ -33,7 +33,6 @@
 
 (defn expand-expression [[type val]]
   (case type
-    ;:string (str "\"" val "\"")
     :string (symbol val)
     :symbol val
     :map (expand-map val expand-expression true)
@@ -103,8 +102,7 @@
 (defmethod expand-clause :default [_] "")
 
 (defmacro FOR [& args]
-  (let [form (s/conform :clj-aql.spec.op/for-op (cons 'FOR args))
-        _ (prn form)]
+  (let [form (s/conform :clj-aql.spec.op/for-op (cons 'FOR args))]
     {:query (expand-clause form)
      :args (into {} (for [n (tree-seq coll? seq args)
                     :when (and (coll? n) (= (first n) `unquote))]
