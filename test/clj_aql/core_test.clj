@@ -48,13 +48,36 @@
                (RETURN u)))
            "FOR u IN users\nSORT u.lastName,u.firstName,u.id DESC\nRETURN u"))))
 
+
+(defn limited-query [o c]
+  (FOR [u] :IN "users"
+       (LIMIT ~o ~c)
+       (RETURN u)))
+
+(defn limited-query-no-offset [c]
+  (FOR [u] :IN "users"
+       (LIMIT ~c)
+       (RETURN u)))
+
 (deftest limit-test
   (testing "limit expression"
     (is (= (:query
              (FOR [u] :IN "users"
               (LIMIT 2 5)
               (RETURN u)))
-           "FOR u IN users\nLIMIT 2,5\nRETURN u"))))
+           "FOR u IN users\nLIMIT 2,5\nRETURN u")))
+  (testing "limit expression with variables"
+    (is (= (limited-query 10 100)
+           {:query "FOR u IN users\nLIMIT @o,@c\nRETURN u"
+            :args {"o" 10 "c" 100}
+            })))
+  (testing "limit expression with count only (no offset)"
+    (is (= (limited-query-no-offset 10)
+           {:query "FOR u IN users\nLIMIT @c\nRETURN u"
+            :args {"c" 10}
+            })))
+  )
+
 
 ; FOR u IN users
 ; LET friends = (
