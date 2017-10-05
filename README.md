@@ -2,6 +2,13 @@
 
 Clojure language extension that provide idiomatic syntax for [ArangoDB](https://arangodb.com/) query language.
 
+## Installation
+[Clojars](https://clojars.org/clj-aql)
+
+```clojure
+[clj-aql "0.1.0-SNAPSHOT"]
+```
+
 ## Usage
 
 ```clojure
