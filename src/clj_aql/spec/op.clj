@@ -24,6 +24,11 @@
   (s/alt :binary-op (s/cat :op-first ::primitive-condition
                            :op ::condition-op
                            :op-second ::primitive-condition)
+         :ternary-op (s/cat :op-first ::primitive-condition
+                            :op ::condition-op
+                            :op-second ::primitive-condition
+                            :op ::condition-op
+                            :op-third ::primitive-condition)
          :primitive ::primitive-condition))
 
 (defmulti high-level-op first)
