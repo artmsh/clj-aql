@@ -6,7 +6,7 @@ Clojure language extension that provide idiomatic syntax for [ArangoDB](https://
 [Clojars](https://clojars.org/clj-aql)
 
 ```clojure
-[clj-aql "0.1.0-SNAPSHOT"]
+[clj-aql "0.1.1-SNAPSHOT"]
 ```
 
 ## Usage
