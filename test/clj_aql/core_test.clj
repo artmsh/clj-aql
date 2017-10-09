@@ -29,7 +29,6 @@
     (FILTER u.name == ~vall)
     (RETURN u.name)))
 
-
 (def local-db "local")
 (def external-db "external")
 (def object-id "object-id")
