@@ -33,7 +33,6 @@
 
 (defn expand-expression [[type val]]
   (case type
-    ;:string (str "\"" val "\"")
     :string (symbol val)
     :symbol val
     :map (expand-map val expand-expression true)
@@ -62,10 +61,15 @@
   (str (expand-operand op-first) " " (expand-any op) " " (expand-operand op-second)))
 
 (defn expand-condition [[condition-type condition]]
-  (if (= condition-type :binary-op)
-    (str (expand-primitive-condition (:op-first condition)) " "
-         (expand-any (:op condition)) " "
-         (expand-primitive-condition (:op-second condition)))
+  (case condition-type
+    :binary-op (str (expand-primitive-condition (:op-first condition)) " "
+                    (expand-any (:op condition)) " "
+                    (expand-primitive-condition (:op-second condition)))
+    :ternary-op (str (expand-primitive-condition (:op-first condition)) " "
+                     (expand-any (:op condition)) " "
+                     (expand-primitive-condition (:op-second condition))
+                     (expand-any (:op condition)) " "
+                     (expand-primitive-condition (:op-third condition)))
     (expand-primitive-condition condition)))
 
 (defmethod expand-clause 'FILTER [{:keys [condition]}]
@@ -106,8 +110,7 @@
 (defmethod expand-clause :default [_] "")
 
 (defmacro FOR [& args]
-  (let [form (s/conform :clj-aql.spec.op/for-op (cons 'FOR args))
-        _ (prn form)]
+  (let [form (s/conform :clj-aql.spec.op/for-op (cons 'FOR args))]
     {:query (expand-clause form)
      :args (into {} (for [n (tree-seq coll? seq args)
                     :when (and (coll? n) (= (first n) `unquote))]
