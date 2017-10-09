@@ -14,22 +14,20 @@
                                  :str string?
                                  :quoted (s/cat :q #{`unquote} :val any?)))
 
-(s/def ::condition-op #{'== '!= '< '<= '> '>= :IN :NOT-IN :LIKE '&& '|| '!})
+(s/def ::condition-op #{'== '!= '< '<= '> '>= :IN :NOT-IN :LIKE '!})
+(s/def ::logical-op #{'&& '|| '!})
 
-(s/def ::primitive-condition (s/cat :op-first ::primitive-operand
-                                    :op ::condition-op
-                                    :op-second ::primitive-operand))
+(s/def ::primitive-condition (s/cat
+                              :op-first ::primitive-operand
+                              :op ::condition-op
+                              :op-second ::primitive-operand))
+
 
 (s/def ::condition
-  (s/alt :binary-op (s/cat :op-first ::primitive-condition
-                           :op ::condition-op
-                           :op-second ::primitive-condition)
-         :ternary-op (s/cat :op-first ::primitive-condition
-                            :op ::condition-op
-                            :op-second ::primitive-condition
-                            :op ::condition-op
-                            :op-third ::primitive-condition)
-         :primitive ::primitive-condition))
+  (s/alt
+   :n-ary-op (s/cat :op-first ::primitive-condition
+                    :op-n-ary (s/+ (s/cat :op-logical ::logical-op :op-cond ::primitive-condition)))
+   :primitive ::primitive-condition))
 
 (defmulti high-level-op first)
 (s/def ::high-level-op (s/multi-spec high-level-op first))

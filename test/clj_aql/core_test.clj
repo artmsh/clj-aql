@@ -29,27 +29,34 @@
     (FILTER u.name == ~vall)
     (RETURN u.name)))
 
+
 (def local-db "local")
 (def external-db "external")
 (def object-id "object-id")
 
 (deftest filter-test
   (testing "filter expression"
-    (is (=  (:query
-              (FOR [u] :IN "users"
-               (FILTER u.active == true && u.age < 39)
-               (RETURN u)))
-          "FOR u IN users\nFILTER u.active == true && u.age < 39\nRETURN u"))
-      (is (= (query "someVal")
-             {:query "FOR u IN users\nFILTER u.name == @vall\nRETURN u.name"
-              :args {"vall" "someVal"}}))
-      #_(is (= (FOR [m] :IN "mapping"
-               (FILTER m.m_db == ~local-db &&
-                       m.e_db == ~external-db &&
-                       m.m_id == ~object-id)
-               (RETURN m)))
-          {:query "(FOR m :IN \"mapping\"\n               (FILTER m.m_db == ~local-db &&\n                       m.e_db == ~external-db &&\n                       m.m_id == ~object-id)\n               (RETURN m))"
-           :args {"local-db" "local"}})))
+    (is (= (:query
+            (FOR [u] :IN "users"
+                 (FILTER u.active == true)
+                 (RETURN u)))
+           "FOR u IN users\nFILTER u.active == true\nRETURN u"))
+
+    (is (= (:query
+            (FOR [u] :IN "users"
+                 (FILTER u.active == true && u.age < 39)
+                 (RETURN u)))
+           "FOR u IN users\nFILTER u.active == true && u.age < 39\nRETURN u"))
+    (is (= (query "someVal")
+           {:query "FOR u IN users\nFILTER u.name == @vall\nRETURN u.name"
+            :args {"vall" "someVal"}}))
+    (is (= (FOR [m] :IN "mapping"
+                (FILTER m.m_db == ~local-db &&
+                        m.e_db == ~external-db &&
+                        m.m_id == ~object-id)
+                (RETURN m))
+           {:query "FOR m IN mapping\nFILTER m.m_db == @local-db && m.e_db == @external-db  && m.m_id == @object-id\nRETURN m"
+            :args {"local-db" "local", "external-db" "external", "object-id" "object-id"}}))))
 
 (deftest sort-test
   (testing "sort expression"

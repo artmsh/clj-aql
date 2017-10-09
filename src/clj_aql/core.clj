@@ -1,6 +1,7 @@
 (ns clj-aql.core
   (:require [clj-aql.spec.fn]
             [clj-aql.spec.op]
+            [clojure.string :as string]
             [clojure.spec.alpha :as s]
             [clojure.spec.test.alpha :as stest]))
 
@@ -60,16 +61,14 @@
 (defn expand-primitive-condition [{:keys [op-first op op-second]}]
   (str (expand-operand op-first) " " (expand-any op) " " (expand-operand op-second)))
 
+(defn expand-n-ary-condition [{:keys [op-logical op-cond]}]
+  (str " " op-logical " " (expand-primitive-condition op-cond)))
+
 (defn expand-condition [[condition-type condition]]
   (case condition-type
-    :binary-op (str (expand-primitive-condition (:op-first condition)) " "
-                    (expand-any (:op condition)) " "
-                    (expand-primitive-condition (:op-second condition)))
-    :ternary-op (str (expand-primitive-condition (:op-first condition)) " "
-                     (expand-any (:op condition)) " "
-                     (expand-primitive-condition (:op-second condition))
-                     (expand-any (:op condition)) " "
-                     (expand-primitive-condition (:op-third condition)))
+    :n-ary-op (str
+               (expand-primitive-condition (:op-first condition))
+               (string/join " " (map expand-n-ary-condition (:op-n-ary condition))))
     (expand-primitive-condition condition)))
 
 (defmethod expand-clause 'FILTER [{:keys [condition]}]
@@ -113,8 +112,8 @@
   (let [form (s/conform :clj-aql.spec.op/for-op (cons 'FOR args))]
     {:query (expand-clause form)
      :args (into {} (for [n (tree-seq coll? seq args)
-                    :when (and (coll? n) (= (first n) `unquote))]
-                  [(str (second n)) (second n)]))}))
+                          :when (and (coll? n) (= (first n) `unquote))]
+                      [(str (second n)) (second n)]))}))
 
 (defmacro RETURN [& args]
   {:query (expand-clause (s/conform :clj-aql.spec.op/return-op (cons 'RETURN args)))
