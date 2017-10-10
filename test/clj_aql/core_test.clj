@@ -33,6 +33,9 @@
 (def external-db "external")
 (def object-id "object-id")
 
+(def ids #{"1" "2"})
+(def clause (clojure.string/join " OR " (map #(str "id = " %) ids)))
+
 (deftest filter-test
   (testing "filter expression"
     (is (= (:query
@@ -55,7 +58,12 @@
                         m.m_id == ~object-id)
                 (RETURN m))
            {:query "FOR m IN mapping\nFILTER m.m_db == @local-db && m.e_db == @external-db  && m.m_id == @object-id\nRETURN m"
-            :args {"local-db" "local", "external-db" "external", "object-id" "object-id"}}))))
+            :args {"local-db" "local", "external-db" "external", "object-id" "object-id"}}))
+    (is (= (FOR [u] :IN "users"
+             (FILTER clause)
+             (RETURN u))
+           {:query "FOR u IN users\nFILTER id = 1 OR id = 2\nRETURN u"
+            :args {}}))))
 
 (deftest sort-test
   (testing "sort expression"

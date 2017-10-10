@@ -25,6 +25,7 @@
 
 (s/def ::condition
   (s/alt
+   :symbol symbol?
    :n-ary-op (s/cat :op-first ::primitive-condition
                     :op-n-ary (s/+ (s/cat :op-logical ::logical-op :op-cond ::primitive-condition)))
    :primitive ::primitive-condition))

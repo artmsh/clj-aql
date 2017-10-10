@@ -5,53 +5,56 @@
             [clojure.spec.alpha :as s]
             [clojure.spec.test.alpha :as stest]))
 
+(defn coll-join [sep coll]
+  (drop-last (mapcat vector coll (repeat sep))))
+
 (defn expand-map [m value-fn quote-key?]
-  (str "{" (clojure.string/join ","
+  (concat ["{"] (flatten (coll-join ","
                                 (map (fn [[k v]]
                                        (let [key (if quote-key? (str "\"" (name k) "\"") k)]
-                                        (str key ":" (value-fn v))))
-                                     m))
-       "}"))
+                                        (concat [key] [":"] (value-fn v))))
+                                     m)))
+       ["}"]))
 
 (declare expand-expression)
 
 (defn expand-any [v]
   (cond
     (map? v) (expand-map v expand-any true)
-    (symbol? v) v
-    (keyword? v) (name v)
-    (string? v) (str "\"" v "\"")
+    (symbol? v) (list (str v))
+    (keyword? v) (list (name v))
+    (string? v) (list "\"" v "\"")
     ; hack for fn args
     (and (vector? v) (= (count v) 2) (keyword? (first v))) (expand-expression v)
-    :else v))
+    :else (list v)))
 
 (defn expand-fn [fn]
   (let [name (:name fn)
         args (vals (dissoc fn :name))]
-    (str name "(" (clojure.string/join "," (map expand-any args)) ")")))
+    (concat [(str name)] ["("] (flatten (coll-join "," (map expand-any args))) [")"])))
 
 (declare expand-clause)
 
 (defn expand-expression [[type val]]
   (case type
-    :string (symbol val)
-    :symbol val
+    :string (list val)
+    :symbol (list (str val))
     :map (expand-map val expand-expression true)
     :map-s (expand-map val expand-expression false)
     :fn (expand-fn val)
-    :for-op (str "(" (expand-clause val) ")")
-    val))
+    :for-op (list "(" (expand-clause val) ")")
+    (list val)))
 
 (defmulti expand-clause :name)
 (defmethod expand-clause 'FOR [{:keys [fields collection clauses]}]
   (let [coll (if (= :string (first collection))
-               (second collection)
-               (str "(" (expand-clause (second collection)) ")"))]
-    (apply str "FOR " (clojure.string/join "," fields) " IN " coll "\n"
-           (map expand-clause clauses))))
+               (list (second collection))
+               (concat ["("] (expand-clause (second collection)) [")"]))]
+    (concat ["FOR "] (coll-join "," (map str fields)) [" IN "] coll ["\n"]
+           (mapcat expand-clause clauses))))
 
 (defmethod expand-clause 'RETURN [{:keys [expression]}]
-  (str "RETURN " (expand-expression expression)))
+  (cons "RETURN " (expand-expression expression)))
 
 (defn expand-operand [[type val]]
   (if (= type :quoted)
@@ -59,67 +62,78 @@
     (str val)))
 
 (defn expand-primitive-condition [{:keys [op-first op op-second]}]
-  (str (expand-operand op-first) " " (expand-any op) " " (expand-operand op-second)))
+  (concat [(expand-operand op-first) " "] (expand-any op) [" " (expand-operand op-second)]))
 
 (defn expand-n-ary-condition [{:keys [op-logical op-cond]}]
-  (str " " op-logical " " (expand-primitive-condition op-cond)))
+  (concat [" "] (expand-any op-logical) [" "] (expand-primitive-condition op-cond)))
 
 (defn expand-condition [[condition-type condition]]
   (case condition-type
-    :n-ary-op (str
+    :symbol (list condition)
+    :n-ary-op (concat
                (expand-primitive-condition (:op-first condition))
-               (string/join " " (map expand-n-ary-condition (:op-n-ary condition))))
+               (flatten (coll-join " " (map expand-n-ary-condition (:op-n-ary condition)))))
     (expand-primitive-condition condition)))
 
 (defmethod expand-clause 'FILTER [{:keys [condition]}]
-  (str "FILTER " (expand-condition condition) "\n"))
+  (concat ["FILTER "] (expand-condition condition) ["\n"]))
 
 (defmethod expand-clause 'SORT [{:keys [expression direction]}]
-  (str "SORT " (clojure.string/join "," expression) " " (name direction) "\n"))
+  (concat ["SORT "] (flatten (coll-join "," (map expand-any expression))) [" " (name direction) "\n"]))
 
 (defmethod expand-clause 'LIMIT [{:keys [offset count]}]
-  (str "LIMIT " (clojure.string/join "," (->> [offset count]
+  (concat ["LIMIT "] (flatten (coll-join "," (->> [offset count]
                                               (filter (complement nil?))
-                                              (map expand-operand))) "\n"))
+                                              (map expand-operand)))) ["\n"]))
 
 (defmethod expand-clause 'LET [{:keys [bindings]}]
-  (str
-    (clojure.string/join "\n"
+  (concat
+    (flatten
+      (coll-join "\n"
                          (for [{:keys [binding expression]} bindings
                                :let [[type val] expression
                                      result (cond
                                               (= type :for-op) (expand-clause val)
                                               (= type :fn) (expand-fn val)
-                                              (= type :string) (symbol val)
-                                              :else val)]]
-                           (str "LET " binding " = (\n" result "\n)")))
-    "\n"))
+                                              (= type :string) (list val)
+                                              :else (list val))]]
+                           (concat ["LET "] (expand-any binding) [" = (\n"] result ["\n)"]))))
+    ["\n"]))
 
 (defmethod expand-clause 'COLLECT [{:keys [vars into-clause keep-clause]}]
-  (str "COLLECT " (clojure.string/join ","
-                                       (map #(str (:variable-name %) " = " (expand-expression (:expression %))) vars))
+  (concat ["COLLECT "]
+          (flatten (coll-join "," (map #(concat
+                                          (expand-any (:variable-name %))
+                                          [" = "]
+                                          (expand-expression (:expression %))) vars)))
        (if into-clause
-         (str " INTO " (:groups-variable into-clause))
-         "")
+         (cons " INTO " (expand-any (:groups-variable into-clause)))
+         [""])
        (if keep-clause
-         (str " KEEP " (:keep-variable keep-clause))
-         "")
-       "\n"))
+         (cons " KEEP " (expand-any (:keep-variable keep-clause)))
+         [""])
+       ["\n"]))
 
 (defmethod expand-clause :default [_] "")
 
 (defmacro FOR [& args]
   (let [form (s/conform :clj-aql.spec.op/for-op (cons 'FOR args))]
-    {:query (expand-clause form)
+    {:query (list 'apply 'str
+                  (cons 'list (expand-clause form)))
      :args (into {} (for [n (tree-seq coll? seq args)
                           :when (and (coll? n) (= (first n) `unquote))]
                       [(str (second n)) (second n)]))}))
 
 (defmacro RETURN [& args]
-  {:query (expand-clause (s/conform :clj-aql.spec.op/return-op (cons 'RETURN args)))
-   :args (into {} (for [n (tree-seq coll? seq args)
-                    :when (and (coll? n) (= (first n) `unquote))]
-                [(str (second n)) (second n)]))})
+  (let [form (expand-clause (s/conform :clj-aql.spec.op/return-op (cons 'RETURN args)))
+        ;_ (prn (s/conform :clj-aql.spec.op/return-op (cons 'RETURN args)))
+        ;_ (prn form)
+        ]
+    {:query (list 'apply 'str
+                  (cons 'list form))
+     :args (into {} (for [n (tree-seq coll? seq args)
+                      :when (and (coll? n) (= (first n) `unquote))]
+                  [(str (second n)) (second n)]))}))
 
 (s/fdef FOR
         :args (s/cat :fields (s/coll-of symbol? :kind vector?)
