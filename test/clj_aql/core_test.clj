@@ -134,6 +134,12 @@
             (RETURN "objs[*].body"))
           {:query ""
            :args {"taxon-type-id" "weight"}}))
+    (is (= (FOR [u] :IN "users"
+             (LET [body "u.body"])
+             (RETURN body))
+           {:query "FOR u IN users\nLET body = u.body\nRETURN body"
+            :args {}}))
+
     (is (=
           (:query (FOR [u] :IN "users"
              (LET [friends (FOR [f] :IN "friends"

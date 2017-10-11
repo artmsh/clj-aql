@@ -93,11 +93,11 @@
                          (for [{:keys [binding expression]} bindings
                                :let [[type val] expression
                                      result (cond
-                                              (= type :for-op) (expand-clause val)
+                                              (= type :for-op) (concat ["(\n"] (expand-clause val) ["\n)"])
                                               (= type :fn) (expand-fn val)
                                               (= type :string) (list val)
                                               :else (list val))]]
-                           (concat ["LET "] (expand-any binding) [" = (\n"] result ["\n)"]))))
+                           (concat ["LET "] (expand-any binding) [" = "] result))))
     ["\n"]))
 
 (defmethod expand-clause 'COLLECT [{:keys [vars into-clause keep-clause]}]
