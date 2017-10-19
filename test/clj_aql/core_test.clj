@@ -16,6 +16,8 @@
             :args {"db" "body"
                    "id" "000000000000"}}))))
 
+(def expression "expression")
+
 (deftest for-in-return-test
   (testing "for-in-return expression"
     (is (= (:query
@@ -29,7 +31,11 @@
     (is (= (:query
              (FOR [u] :IN (FOR [v] :IN "vendors" (RETURN v))
                (RETURN u.name)))
-           "FOR u IN (FOR v IN vendors\nRETURN v)\nRETURN u.name"))))
+           "FOR u IN (FOR v IN vendors\nRETURN v)\nRETURN u.name"))
+    (is (= (FOR [variableName] :IN ~expression
+             (RETURN variableName))
+           {:query "FOR variableName IN @expression\nRETURN variableName"
+            :args {"expression" "expression"}}))))
 
 (defn query [vall]
   (FOR [u] :IN "users"

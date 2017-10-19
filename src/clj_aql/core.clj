@@ -48,8 +48,9 @@
 
 (defmulti expand-clause :name)
 (defmethod expand-clause 'FOR [{:keys [fields collection clauses]}]
-  (let [coll (if (= :string (first collection))
-               (list (second collection))
+  (let [coll (case (first collection)
+               :string (list (second collection))
+               :quoted (list (str "@" (:val (second collection))))
                (concat ["("] (expand-clause (second collection)) [")"]))]
     (concat ["FOR "] (coll-join "," (map str fields)) [" IN "] coll ["\n"]
            (mapcat expand-clause clauses))))
@@ -148,6 +149,7 @@
                      :in #{:IN}
                      :collection (s/or :for-op :clj-aql.spec.op/for-op
                                        :fn :clj-aql.spec.fn/function
+                                       :quoted (s/cat :q #{`unquote} :val any?)
                                        :string string?)
                      :clauses (s/* :clj-aql.spec.op/high-level-op)))
 
