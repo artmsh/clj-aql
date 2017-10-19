@@ -39,6 +39,7 @@
   (case type
     :string (list val)
     :symbol (list (str val))
+    :quoted [(str "@" (:val val))]
     :map (expand-map val expand-expression true)
     :map-s (expand-map val expand-expression false)
     :fn (expand-fn val)
@@ -57,12 +58,13 @@
   (cons "RETURN " (expand-expression expression)))
 
 (defn expand-operand [[type val]]
-  (if (= type :quoted)
-    (str "@" (:val val))
-    (str val)))
+  (case type
+    :quoted [(str "@" (:val val))]
+    :fn (expand-fn val)
+    [(str val)]))
 
 (defn expand-primitive-condition [{:keys [op-first op op-second]}]
-  (concat [(expand-operand op-first) " "] (expand-any op) [" " (expand-operand op-second)]))
+  (concat (expand-operand op-first) [" "] (expand-any op) [" "] (expand-operand op-second)))
 
 (defn expand-n-ary-condition [{:keys [op-logical op-cond]}]
   (concat [" "] (expand-any op-logical) [" "] (expand-primitive-condition op-cond)))

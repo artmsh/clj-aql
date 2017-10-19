@@ -12,6 +12,7 @@
                                  :num number?
                                  :bool boolean?
                                  :str string?
+                                 :fn :clj-aql.spec.fn/function
                                  :quoted (s/cat :q #{`unquote} :val any?)))
 
 (s/def ::condition-op #{'== '!= '< '<= '> '>= :IN :NOT-IN :LIKE '!})

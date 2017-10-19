@@ -44,7 +44,10 @@
 (defmethod document-function 'OUTERSECTION [_] (s/cat :name #{'OUTERSECTION}
                                                       :doc symbol?))
 (defmethod document-function 'POSITION [_] (s/cat :name #{'POSITION}
-                                                  :doc symbol?))
+                                                  :any-array (s/or :quoted (s/cat :q #{`unquote} :val any?)
+                                                                   :symbol symbol?)
+                                                  :search any?
+                                                  :return-index (s/? boolean?)))
 (defmethod document-function 'PUSH [_] (s/cat :name #{'PUSH}
                                               :doc symbol?))
 (defmethod document-function 'REMOVE_NTH [_] (s/cat :name #{'REMOVE_NTH}
