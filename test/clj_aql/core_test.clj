@@ -32,10 +32,10 @@
              (FOR [u] :IN (FOR [v] :IN "vendors" (RETURN v))
                (RETURN u.name)))
            "FOR u IN (FOR v IN vendors\nRETURN v)\nRETURN u.name"))
-    (is (= (FOR [variableName] :IN ~expression
+    (is (= (FOR [variableName] :IN expression
              (RETURN variableName))
-           {:query "FOR variableName IN @expression\nRETURN variableName"
-            :args {"expression" "expression"}}))))
+           {:query "FOR variableName IN expression\nRETURN variableName"
+            :args {}}))))
 
 (defn query [vall]
   (FOR [u] :IN "users"

@@ -37,9 +37,9 @@
 (s/def ::for-op (s/cat :name #{'FOR}
                        :fields (s/coll-of symbol? :kind vector?)
                        :in #{:IN}
-                       :collection (s/or :for-op ::for-op
+                       :collection (s/or :symbol symbol?
+                                         :for-op ::for-op
                                          :fn :clj-aql.spec.fn/function
-                                         :quoted (s/cat :q #{`unquote} :val any?)
                                          :string string?)
                        :clauses (s/* ::high-level-op)))
 

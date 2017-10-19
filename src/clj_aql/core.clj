@@ -50,7 +50,7 @@
 (defmethod expand-clause 'FOR [{:keys [fields collection clauses]}]
   (let [coll (case (first collection)
                :string (list (second collection))
-               :quoted (list (str "@" (:val (second collection))))
+               :symbol (list (second collection))
                (concat ["("] (expand-clause (second collection)) [")"]))]
     (concat ["FOR "] (coll-join "," (map str fields)) [" IN "] coll ["\n"]
            (mapcat expand-clause clauses))))
@@ -126,7 +126,9 @@
     ""))
 
 (defmacro FOR [& args]
-  (let [form (s/conform :clj-aql.spec.op/for-op (cons 'FOR args))]
+  (let [form (s/conform :clj-aql.spec.op/for-op (cons 'FOR args))
+        ;_ (prn "FORM: " form)
+        ]
     {:query (list 'apply 'str
                   (cons 'list (expand-clause form)))
      :args (into {} (for [n (tree-seq coll? seq args)
@@ -147,9 +149,9 @@
 (s/fdef FOR
         :args (s/cat :fields (s/coll-of symbol? :kind vector?)
                      :in #{:IN}
-                     :collection (s/or :for-op :clj-aql.spec.op/for-op
+                     :collection (s/or :symbol symbol?
+                                       :for-op :clj-aql.spec.op/for-op
                                        :fn :clj-aql.spec.fn/function
-                                       :quoted (s/cat :q #{`unquote} :val any?)
                                        :string string?)
                      :clauses (s/* :clj-aql.spec.op/high-level-op)))
 
