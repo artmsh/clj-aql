@@ -165,3 +165,17 @@
                      (COLLECT [city u.city] :INTO objs :KEEP body)
                      (RETURN { :city city })))
            "FOR u IN users\nCOLLECT city = u.city INTO objs KEEP body\nRETURN {\"city\":city}"))))
+
+
+
+(deftest flatten-test
+  (testing "flatten expression"
+    (is (= (:query (FOR [u] :IN "users"
+                        (LET [name (FLATTEN u.names)])
+                        (RETURN { :name name })))
+           "FOR u IN users\nLET name = FLATTEN(u.names)\nRETURN {\"name\":name}")))
+  (testing "flatten expression with inner FOR"
+    (is (= (:query (FOR [u] :IN (FLATTEN (FOR [x] :IN "users"
+                                              (RETURN x)))
+                        (RETURN u)))
+           "FOR u IN (FLATTEN((FOR x IN users\nRETURN x)))\nRETURN u"))))

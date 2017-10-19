@@ -114,7 +114,13 @@
          [""])
        ["\n"]))
 
-(defmethod expand-clause :default [_] "")
+(defmethod expand-clause :default [clause]
+  (if (map? clause)
+    (cond
+      ;; expand function with FOR inside
+      (not (nil? (:name clause))) (expand-fn clause)
+      :else "")
+    ""))
 
 (defmacro FOR [& args]
   (let [form (s/conform :clj-aql.spec.op/for-op (cons 'FOR args))]
@@ -139,6 +145,7 @@
         :args (s/cat :fields (s/coll-of symbol? :kind vector?)
                      :in #{:IN}
                      :collection (s/or :for-op :clj-aql.spec.op/for-op
+                                       :fn :clj-aql.spec.fn/function
                                        :string string?)
                      :clauses (s/* :clj-aql.spec.op/high-level-op)))
 

@@ -37,6 +37,7 @@
                        :fields (s/coll-of symbol? :kind vector?)
                        :in #{:IN}
                        :collection (s/or :for-op ::for-op
+                                         :fn :clj-aql.spec.fn/function
                                          :string string?)
                        :clauses (s/* ::high-level-op)))
 
