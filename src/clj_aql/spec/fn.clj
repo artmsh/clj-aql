@@ -82,9 +82,11 @@
                                                :doc ::document))
 
 (defmethod document-function 'DOCUMENT [_] (s/cat :name #{'DOCUMENT}
-                                                  :collection (s/? string?)
+                                                  :collection (s/? (s/or :string string?
+                                                                         :quoted (s/cat :q #{`unquote} :val any?)))
                                                   :id (s/or :string string?
                                                             :symbol symbol?
+                                                            :quoted (s/cat :q #{`unquote} :val any?)
                                                             :array (s/* string?))))
 
 (s/def ::function (s/multi-spec document-function first))

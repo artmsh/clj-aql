@@ -2,12 +2,19 @@
   (:require [clojure.test :refer :all]
             [clj-aql.core :refer :all]))
 
+(def db "body")
+(def id "000000000000")
+
 (deftest return-test
   (testing "simple return expression"
     (is (= (:query (RETURN expression)) "RETURN expression")))
   (testing "return with function"
     (is (= (:query (RETURN (ATTRIBUTES {:foo "bar" :_key "123" :_custom "yes"} false true)))
-           "RETURN ATTRIBUTES({\"foo\":\"bar\",\"_key\":\"123\",\"_custom\":\"yes\"},false,true)"))))
+           "RETURN ATTRIBUTES({\"foo\":\"bar\",\"_key\":\"123\",\"_custom\":\"yes\"},false,true)"))
+    (is (= (RETURN (DOCUMENT ~db ~id))
+           {:query "RETURN DOCUMENT(@db,@id)"
+            :args {"db" "body"
+                   "id" "000000000000"}}))))
 
 (deftest for-in-return-test
   (testing "for-in-return expression"
@@ -35,6 +42,11 @@
 
 (def ids #{"1" "2"})
 (def clause (clojure.string/join " OR " (map #(str "id = " %) ids)))
+
+(FOR [b] :IN "body"
+  (FILTER clause) ;; (POSITION ~ids "b._key" "false") = true)
+  (RETURN {:body b
+           :taxa (FOR [tx] :IN "b.taxa" (RETURN (DOCUMENT "taxon" tx.taxon_id)))}))
 
 (deftest filter-test
   (testing "filter expression"
