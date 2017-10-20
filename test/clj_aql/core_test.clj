@@ -196,7 +196,7 @@
     (is (= (:query (FOR [u] :IN (FLATTEN (FOR [x] :IN "users"
                                            (RETURN x)))
                      (RETURN u)))
-           "FOR u IN (FLATTEN((FOR x IN users\nRETURN x)))\nRETURN u"))))
+           "FOR u IN FLATTEN((FOR x IN users\nRETURN x))\nRETURN u"))))
 
 (deftest fn-test
   (testing "POSITION with external array expression"
@@ -206,3 +206,13 @@
                        (RETURN b)))
           {:query "FOR b IN body\nFILTER POSITION([\"00000518200053\"],b._key,false) == true\nRETURN b"
            :args [["00000518200053"]]}))))
+
+(deftest insert-test
+  (testing "insert string literal"
+    (is (= (INSERT "{ value : 1 }" :IN "numbers")
+           {:query "INSERT { value : 1 } IN numbers"
+            :args {}})))
+  (testing "insert string literal with options"
+    (is (= (INSERT "{ value : 1 }" :IN "numbers" :OPTIONS {:waitForSync true})
+           {:query "INSERT { value : 1 } IN numbers OPTIONS {\"waitForSync\":true}"
+            :args {}}))))
