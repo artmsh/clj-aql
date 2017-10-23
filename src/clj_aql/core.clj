@@ -124,7 +124,10 @@
           (case (first document)
             :string (list (second document))
             :symbol (list (second document)))
-          (list " " (name into) " " collection)
+          (list " " (name into) " ")
+          (case (first collection)
+            :string (list (second collection))
+            :symbol (list (second collection)))
           (if-not (nil? options-clause)
             [" OPTIONS " (json/generate-string (:options options-clause))]
             [])

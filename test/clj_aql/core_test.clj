@@ -215,4 +215,9 @@
   (testing "insert string literal with options"
     (is (= (INSERT "{ value : 1 }" :IN "numbers" :OPTIONS {:waitForSync true})
            {:query "INSERT { value : 1 } IN numbers OPTIONS {\"waitForSync\":true}"
-            :args {}}))))
+            :args {}})))
+  (testing "insert into variable collection"
+    (let [coll "collection"]
+      (is (= (INSERT "{ value : 1 }" :IN coll)
+             {:query "INSERT { value : 1 } IN collection"
+              :args {}})))))

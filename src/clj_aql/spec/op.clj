@@ -72,7 +72,8 @@
 (s/def ::insert-op-args (s/cat :document (s/or :string string?
                                                :symbol symbol?)
                                :into #{:INTO :IN}
-                               :collection string?
+                               :collection (s/or :string string?
+                                                 :symbol symbol?)
                                :options-clause
                                (s/? (s/cat :options-marker #{:OPTIONS}
                                            :options (s/map-of keyword? any?)))
