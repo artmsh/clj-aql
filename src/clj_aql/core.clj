@@ -135,7 +135,7 @@
             (mapcat expand-clause1 let-clauses)
             [])
           (if-not (nil? return-clause)
-            (expand-clause1 return-clause)
+            [" RETURN " (:op return-clause)]
             [])
           #_["\n"]))
 

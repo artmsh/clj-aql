@@ -78,8 +78,9 @@
                                (s/? (s/cat :options-marker #{:OPTIONS}
                                            :options (s/map-of keyword? any?)))
                                ; TODO ::let-op with NEW ::return-op with NEW
-                               :let-clauses (s/* ::let-op)
-                               :return-clause (s/? ::return-op)))
+                               ;:let-clauses (s/? (s/* ::let-op))
+                               :return-clause (s/? (s/cat :return-marker #{:RETURN}
+                                                          :op string?))))
 
 (s/def ::insert-op (s/cat :name #{'INSERT}
                           :args ::insert-op-args))

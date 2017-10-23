@@ -220,4 +220,8 @@
     (let [coll "collection"]
       (is (= (INSERT "{ value : 1 }" :IN coll)
              {:query "INSERT { value : 1 } IN collection"
-              :args {}})))))
+              :args {}}))))
+  (testing "insert with return new"
+    (is (= (INSERT "{ value : 1 }" :IN "coll" :RETURN "NEW")
+           {:query "INSERT { value : 1 } IN coll RETURN NEW"
+            :args {}}))))
