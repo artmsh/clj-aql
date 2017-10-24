@@ -1,6 +1,7 @@
 (ns clj-aql.core-test
   (:require [clojure.test :refer :all]
-            [clj-aql.core :refer :all]))
+            [clj-aql.core :refer :all]
+            [cheshire.core :as json]))
 
 (def db "body")
 (def id "000000000000")
@@ -224,4 +225,14 @@
   (testing "insert with return new"
     (is (= (INSERT "{ value : 1 }" :IN "coll" :RETURN "NEW")
            {:query "INSERT { value : 1 } IN coll RETURN NEW"
-            :args {}}))))
+            :args {}})))
+  (testing "insert multiple from string binding"
+    (let [edn-objs [{:id 1 :data1 100 :data2 "100" :data3 {:data4 [] :data5 "100-200"}}
+                    {:id 2 :data1 200 :data2 "200" :data3 {:data4 [] :data5 "200-300"}}]
+          json-objs (json/generate-string edn-objs {:key-fn name})]
+      (is (= (FOR [v] :IN json-objs
+               (INSERT "v" :IN "coll" :RETURN "NEW"))
+             {:query (str "FOR v IN [{\"id\":1,\"data1\":100,\"data2\":\"100\",\"data3\":{\"data4\":[],"
+                          "\"data5\":\"100-200\"}},{\"id\":2,\"data1\":200,\"data2\":\"200\",\"data3\":{\"data4\":[],"
+                          "\"data5\":\"200-300\"}}]\nINSERT v IN coll RETURN NEW")
+              :args {}})))))
