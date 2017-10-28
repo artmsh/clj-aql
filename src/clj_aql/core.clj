@@ -27,6 +27,7 @@
     (string? v) (list "\"" v "\"")
     ; hack for fn args
     (and (vector? v) (= (count v) 2) (keyword? (first v))) (expand-expression v)
+    (sequential? v) v
     :else (list v)))
 
 (defn expand-fn [fn]
@@ -38,13 +39,15 @@
 
 (defn expand-expression [[type val]]
   (case type
-    :string (list val)
+    :string (list (str "\"" val "\""))
     :symbol (list (str val))
     :quoted [(str "@" (:val val))]
     :map (expand-map val expand-expression true)
     :map-s (expand-map val expand-expression false)
     :fn (expand-fn val)
     :for-op (list "(" (expand-clause1 val) ")")
+    :varargs (list (clojure.string/join "," (map (comp (partial clojure.string/join "") expand-any) val)))
+    :array (list "[" (clojure.string/join "," (map (comp (partial clojure.string/join "") expand-any) val)) "]")
     (list val)))
 
 (defmulti expand-clause :name)
@@ -152,7 +155,7 @@
 
 (defn- expand-with-symbol [spec sym args]
   (let [form (s/conform spec (cons sym args))
-        ;_ (prn "FORM: " form)
+        _ (prn "FORM: " form)
         ]
     {:query (list 'apply 'str
                   (cons 'list (expand-clause1 form)))

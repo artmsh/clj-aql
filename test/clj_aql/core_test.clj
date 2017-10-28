@@ -185,7 +185,9 @@
                      (RETURN {:city city})))
            "FOR u IN users\nCOLLECT city = u.city INTO objs KEEP body\nRETURN {\"city\":city}"))))
 
-
+(deftest keep-test
+  (is (= (:query (RETURN (KEEP (DOCUMENT "location" "t1p") ["id" "locationType"])))
+         "RETURN KEEP(DOCUMENT(\"location\",\"t1p\"),[\"id\",\"locationType\"])")))
 
 (deftest flatten-test
   (testing "flatten expression"

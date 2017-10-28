@@ -1,7 +1,8 @@
 (ns clj-aql.spec.fn
   (:require [clojure.spec.alpha :as s]))
 
-(s/def ::document map?)
+(s/def ::document (s/or :map map?
+                        :fn ::function))
 (s/def ::_id string?)
 (s/def ::indexed-document (s/and map? (s/keys :req-un [::_id])))
 
@@ -20,7 +21,8 @@
                                                             :document-handle (s/or :string string?
                                                                                    :kw ::indexed-document)))
 (defmethod document-function 'KEEP [_] (s/cat :name #{'KEEP}
-                                              :attribute-names (s/or :varargs (s/* string?)
+                                              :document ::document
+                                              :attribute-names (s/or ;:varargs (s/* string?)
                                                                      :array (s/coll-of string? :kind vector?))))
 
 (defmethod document-function 'LENGTH [_] (s/cat :name #{'LENGTH}
