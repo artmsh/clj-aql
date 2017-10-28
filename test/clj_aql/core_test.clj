@@ -189,6 +189,10 @@
   (is (= (:query (RETURN (KEEP (DOCUMENT "location" "t1p") ["id" "locationType"])))
          "RETURN KEEP(DOCUMENT(\"location\",\"t1p\"),[\"id\",\"locationType\"])")))
 
+(deftest values-test
+  (is (= (:query (RETURN (VALUES (KEEP (DOCUMENT "location" "t1p") ["id" "locationType"]))))
+         "RETURN VALUES(KEEP(DOCUMENT(\"location\",\"t1p\"),[\"id\",\"locationType\"]))")))
+
 (deftest flatten-test
   (testing "flatten expression"
     (is (= (:query (FOR [u] :IN "users"

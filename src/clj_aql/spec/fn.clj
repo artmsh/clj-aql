@@ -91,4 +91,8 @@
                                                             :symbol symbol?
                                                             :array (s/* string?))))
 
+(defmethod document-function 'VALUES [_] (s/cat :name #{'VALUES}
+                                                :document ::document
+                                                :remove-internal (s/? boolean?)))
+
 (s/def ::function (s/multi-spec document-function first))
