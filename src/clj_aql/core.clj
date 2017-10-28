@@ -163,7 +163,10 @@
                           :when (and (coll? n) (= (first n) `unquote))]
                       [(str (second n)) (second n)]))}))
 
-(defmacro FOR [& args] (expand-with-symbol :clj-aql.spec.op/for-op 'FOR args))
+(defn for-expansion [args]
+  (expand-with-symbol :clj-aql.spec.op/for-op 'FOR args))
+
+(defmacro FOR [& args] (for-expansion args))
 (defmacro RETURN [& args] (expand-with-symbol :clj-aql.spec.op/return-op 'RETURN args))
 (defmacro INSERT [& args] (expand-with-symbol :clj-aql.spec.op/insert-op 'INSERT args))
 
