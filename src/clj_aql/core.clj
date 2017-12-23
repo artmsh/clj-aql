@@ -6,6 +6,8 @@
             [clojure.spec.test.alpha :as stest]
             [cheshire.core :as json]))
 
+(def ATTRIBUTES (symbol "ATTRIBUTES"))
+
 (defn coll-join [sep coll]
   (drop-last (mapcat vector coll (repeat sep))))
 
@@ -155,7 +157,9 @@
 
 (defn- expand-with-symbol [spec sym args]
   (let [form (s/conform spec (cons sym args))
+        _ (when (= form ::s/invalid) (prn (s/explain-str spec (cons sym args))))
         _ (prn "FORM: " form)
+
         ]
     {:query (list 'apply 'str
                   (cons 'list (expand-clause1 form)))

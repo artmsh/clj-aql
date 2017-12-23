@@ -33,14 +33,57 @@
 (defmulti high-level-op first)
 (s/def ::high-level-op (s/multi-spec high-level-op first))
 
-(s/def ::for-op-args (s/cat :fields (s/coll-of symbol? :kind vector?)
-                            :in #{:IN}
-                            :collection (s/or :symbol symbol?
+
+; literal: edn-array: [1 2 {:a 3}]
+; literal: edn-object: {:a 1, :b [1 2 3]}
+; ref: string: 'users' (collection in database), 'u' (binding from another FOR or LET)
+; ref: symbol: will be resolved during macroexpansion: users => (let [users "users"] ...)
+
+
+; literal array will be expanded to json representation
+; literal map will be expanded to json representation
+
+; comma-sep expands inner content to [symb1], [symb2], [symb3]
+; str-symbol: '.. to ..
+
+
+(s/def ::for-op-doc-args
+  (s/cat :field (s/or :ref-string string?
+                      :ref-symbol symbol?)
+                            :kw #{:IN}
+                            :collection (s/or :ref-string string?
+                                              :ref-symbol-json symbol?
+                                              :literal-array (s/coll-of any?)
                                               :for-op ::for-op
-                                              :fn :clj-aql.spec.fn/function
-                                              :string string?)
+                                              :fn :clj-aql.spec.fn/function)
                             :clauses (s/* ::high-level-op)))
-(s/def ::for-op (s/cat :name #{'FOR}
+
+(s/def ::edge (s/cat
+                :any-cl (s/? (s/or :kw #{:ANY}))
+                :ref-string string?))
+
+(s/def ::for-op-graph-args
+  (s/cat :comma-sep (s/coll-of (s/or :ref-string string?) :kind vector? :min-count 1 :max-count 3)
+         :kw #{:IN}
+         :min (s/? (s/alt :num nat-int?))
+         :max (s/? (s/cat :str-symbol #{'..} :num nat-int?))
+         :dir (s/alt :kw #{:OUTBOUND :INBOUND :ANY})
+         ; TODO add support for document
+         :start-vertex (s/alt :ref-string string?)
+         :graph-or-edge-colls (s/alt :graph (s/cat :kw #{:GRAPH} :ref-string string?)
+                                     :edge-colls (s/coll-of ::edge
+                                                            :kind vector? :min-count 1))
+         :opts (s/? (s/cat :kw #{:OPTIONS} :literal-map map?))
+         :clauses (s/* ::high-level-op)
+         ))
+
+(s/def ::for-op-args (s/alt
+                       :for-op-graph-args ::for-op-graph-args
+                       :for-op-doc-args ::for-op-doc-args
+                       )
+)
+
+(s/def ::for-op (s/cat :str-symbol #{'FOR}
                        :args ::for-op-args))
 
 (s/def ::let-expr (s/or
