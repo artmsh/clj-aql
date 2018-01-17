@@ -31,7 +31,8 @@
   (s/cat :str-symbol #{'RETURN}
          :expression (s/or :ref-string string?
                            :literal-map (s/map-of any? any?)
-                           :fn ::fns/function)))
+                           :fn ::fns/function
+                           :for-op ::for-op)))
 
 (s/def ::filter-op
   (s/cat :str-symbol #{'FILTER}

@@ -24,7 +24,9 @@
   (is (= (RETURN {"[u._id]" "u.age"})
          "RETURN {[u._id]:u.age}"))
   (is (= (RETURN (FLATTEN [1 [2 3]]))
-         "RETURN FLATTEN([1,[2,3]])")))
+         "RETURN FLATTEN([1,[2,3]])"))
+  (is (= (RETURN (FOR "i" :IN [1 2]))
+         "RETURN (FOR i IN [1,2])")))
 
 (deftest filter-test
   (is (= (FILTER "b.id == 1")

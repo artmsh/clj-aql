@@ -178,12 +178,12 @@
 (declare emit)
 
 (defn expand-op [op-map]
-  (prn "op-map: " op-map)
+  ;(prn "op-map: " op-map)
   (let [emitted (vec (walk/postwalk emit (seq op-map)))]
     (list 'str "(" (list 'clojure.string/join " " emitted) ")")))
 
 (defn expand-fn [fn-map]
-  (prn fn-map)
+  ;(prn fn-map)
   (let [fn-name (str (:str-symbol fn-map))
         fn-args-map (dissoc fn-map :str-symbol)
         emitted (vec (walk/postwalk emit (seq fn-args-map)))]
