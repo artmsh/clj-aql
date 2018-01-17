@@ -1,10 +1,14 @@
 (ns clj-aql.core-test
   (:require [clojure.test :refer :all]
             [clj-aql.core :refer :all]
-            [cheshire.core :as json]))
+            [cheshire.core :as json]
+            [spectrum.check :as check]))
 
 (def db "body")
 (def id "000000000000")
+
+(deftest spectrum-check
+  (is (empty? (check/check 'clj-aql.core))))
 
 (deftest return-test
   (testing "simple return expression"

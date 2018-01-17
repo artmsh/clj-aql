@@ -1,12 +1,14 @@
 (ns clj-aql.core
-  (:require [clj-aql.spec.fn]
-            [clj-aql.spec.op]
+  (:require [clj-aql.spec.fn :as fns]
+            [clj-aql.spec.op :as ops]
             [clojure.string :as string]
-            [clojure.spec.alpha :as s]
-            [clojure.spec.test.alpha :as stest]
-            [cheshire.core :as json]))
+            [clojure.spec :as s]
+            [clojure.spec.test :as stest]
+            [cheshire.core :as json]
+            [clojure.walk :as walk]
+            [clojure.string :as str]))
 
-(def ATTRIBUTES (symbol "ATTRIBUTES"))
+(def OR (symbol "OR"))
 
 (defn coll-join [sep coll]
   (drop-last (mapcat vector coll (repeat sep))))
@@ -157,7 +159,7 @@
 
 (defn- expand-with-symbol [spec sym args]
   (let [form (s/conform spec (cons sym args))
-        _ (when (= form ::s/invalid) (prn (s/explain-str spec (cons sym args))))
+        _ (when (= form :clojure.spec/invalid) (prn (s/explain-str spec (cons sym args))))
         _ (prn "FORM: " form)
 
         ]
@@ -167,20 +169,108 @@
                           :when (and (coll? n) (= (first n) `unquote))]
                       [(str (second n)) (second n)]))}))
 
-(defn for-expansion [args]
-  (expand-with-symbol :clj-aql.spec.op/for-op 'FOR args))
+(defn is-op-node? [node-key]
+  (some #(= (keyword "clj-aql.spec.op" (name node-key)) (key %)) (s/registry)))
 
-(defmacro FOR [& args] (for-expansion args))
-(defmacro RETURN [& args] (expand-with-symbol :clj-aql.spec.op/return-op 'RETURN args))
-(defmacro INSERT [& args] (expand-with-symbol :clj-aql.spec.op/insert-op 'INSERT args))
+(defn is-fn-node? [node-key]
+  (some #(= (keyword "clj-aql.spec.fn" (name node-key)) (key %)) (s/registry)))
 
-(s/fdef FOR :args :clj-aql.spec.op/for-op-args
-            :ret string?)
+(declare emit)
 
-(s/fdef RETURN :args :clj-aql.spec.op/return-op-args
-               :ret string?)
+(defn expand-op [op-map]
+  (prn op-map)
+  (let [emitted (vec (walk/postwalk emit (seq op-map)))]
+    (list 'str "(" (list 'clojure.string/join " " emitted) ")")))
 
-(s/fdef INSERT :args :clj-aql.spec.op/insert-op-args
-               :ret string?)
+(defn expand-fn [fn-map]
+  (prn fn-map)
+  (let [fn-name (str (:str-symbol fn-map))
+        fn-args-map (dissoc fn-map :str-symbol)
+        emitted (vec (walk/postwalk emit (seq fn-args-map)))]
+    (list 'str fn-name "(" (list 'clojure.string/join "," emitted) ")")))
 
-(stest/instrument [`FOR `RETURN `INSERT])
+(defn emit [node]
+  ;(prn node)
+
+  (if (and (vector? node) (= (count node) 2) (keyword? (first node)))
+    (cond
+      (= (first node) :str-symbol) (str (second node))
+      (= (first node) :ref-symbol-number) (second node)
+      (= (first node) :ref-string) (second node)
+      (= (first node) :literal-string) (str "\"" (second node) "\"")
+      (= (first node) :literal-array) (json/generate-string (second node))
+      (= (first node) :literal-map) (str/replace (json/generate-string (second node)) "\"" "")
+      (= (first node) :literal-tuple) (str/join "," (second node))
+      (= (first node) :ref-symbol-tuple) (list 'clojure.string/join "," (second node))
+      (= (first node) :kw) (name (second node))
+      (= (first node) :ref-symbol-sequential) (list 'cheshire.core/generate-string (second node))
+      (= (first node) :binary-expression)
+        (let [{:keys [operator rvalue lvalue]} (second node)]
+          (str lvalue operator rvalue))
+      (= (first node) :multi-expression)
+        (let [{:keys [operator rvalue lvalue]} (second node)]
+          (str/join (str " " operator " ")
+              (cons (emit lvalue) (map emit rvalue))))
+      (is-op-node? (first node)) (expand-op (second node))
+      (is-fn-node? (first node)) (expand-fn (second node))
+      :else (emit (second node)))
+    node))
+
+(defn op-expansion [spec form]
+  (let [exp (s/conform spec form)
+        ;_ (prn "op-exp: " exp)
+        emitted (map emit (seq exp))]
+    (list 'clojure.string/join " " (vec emitted))))
+
+(defn fn-expansion [spec form fn]
+  (let [exp (s/conform spec form)
+        ;_ (prn exp)
+        emitted (map emit (seq exp))]
+    (list 'str (str fn) "("
+      (list 'clojure.string/join "," (vec emitted))
+          ")")))
+
+(defn get-args-spec [spec]
+  (eval (cons 'clojure.spec/cat (drop 2 (rest (s/form spec))))))
+
+(defmacro FOR [& args] (op-expansion ::ops/for-op (cons 'FOR args)))
+(s/fdef FOR :args (get-args-spec ::ops/for-op) :ret string?)
+
+(defmacro RETURN [& args] (op-expansion ::ops/return-op (cons 'RETURN args)))
+(s/fdef RETURN :args (get-args-spec ::ops/return-op) :ret string?)
+
+(defmacro FILTER [& args] (op-expansion ::ops/filter-op (cons 'FILTER args)))
+(s/fdef FILTER :args (get-args-spec ::ops/filter-op) :ret string?)
+
+(defmacro SORT [& args] (op-expansion ::ops/sort-op (cons 'SORT args)))
+(s/fdef SORT :args (get-args-spec ::ops/sort-op) :ret string?)
+
+(defmacro LIMIT [& args] (op-expansion ::ops/limit-op (cons 'LIMIT args)))
+(s/fdef LIMIT :args (get-args-spec ::ops/limit-op) :ret string?)
+
+(defmacro LET [& args] (op-expansion ::ops/let-op (cons 'LET args)))
+(s/fdef LET :args (get-args-spec ::ops/let-op) :ret string?)
+
+(defmacro FLATTEN [& args] (fn-expansion (get-args-spec ::fns/flatten-fn) args 'FLATTEN))
+(s/fdef FLATTEN :args (get-args-spec ::fns/flatten-fn) :ret string?)
+
+(defmacro DOCUMENT [& args] (fn-expansion (get-args-spec ::fns/document-fn) args 'DOCUMENT))
+(s/fdef DOCUMENT :args (get-args-spec ::fns/document-fn) :ret string?)
+
+;(defmacro RETURN [& args] (expand-with-symbol :clj-aql.spec.op/return-op 'RETURN args))
+;(defmacro INSERT [& args] (expand-with-symbol :clj-aql.spec.op/insert-op 'INSERT args))
+
+
+
+;(s/fdef RETURN :args :clj-aql.spec.op/return-op-args
+;               :ret string?)
+;
+;(s/fdef INSERT :args :clj-aql.spec.op/insert-op-args
+;               :ret string?)
+
+(stest/instrument [`FOR
+                   `FLATTEN
+                   `RETURN
+                   `FILTER
+                   `DOCUMENT
+                   ])

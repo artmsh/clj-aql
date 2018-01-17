@@ -1,8 +1,6 @@
-# clj-aql
+# clj-aql [![CircleCI](https://circleci.com/gh/artmsh/clj-aql.svg?style=svg)](https://circleci.com/gh/artmsh/clj-aql)
 
 Clojure language extension that provide idiomatic syntax for [ArangoDB](https://arangodb.com/) query language.
-
-[![CircleCI](https://circleci.com/gh/artmsh/clj-aql.svg?style=svg)](https://circleci.com/gh/artmsh/clj-aql)
 
 ## Installation
 [Clojars](https://clojars.org/clj-aql)
