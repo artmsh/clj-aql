@@ -1,7 +1,7 @@
 (ns clj-aql.spec.op
-  (:require [clojure.spec :as s]
-            [clj-aql.spec.base :as base]
-            [clj-aql.spec.fn :as fns]))
+  (:require [clj-aql.spec.base :as base]
+            [clj-aql.spec.fn :as fns]
+            [clojure.spec.alpha :as s]))
 
 ; literal: edn-array: [1 2 {:a 3}]
 ; literal: edn-object: {:a 1, :b [1 2 3]}
@@ -50,12 +50,11 @@
 
 (s/def ::let-op
   (s/cat :str-symbol #{'LET}
-         :expression
-         :ref-string string?
-         :expression (s/or
-                       :ref-string string?
-                       :fn ::fns/function
-                       :for-op ::for-op)))
+         :assignment-expression (s/cat :lvalue string?
+                                       :rvalue (s/or
+                                                 :ref-string string?
+                                                 :fn ::fns/function
+                                                 :for-op ::for-op))))
 
 ;(s/def ::primitive-num (s/or
 ;                         :num number?

@@ -2,11 +2,11 @@
   (:require [clj-aql.spec.fn :as fns]
             [clj-aql.spec.op :as ops]
             [clojure.string :as string]
-            [clojure.spec :as s]
-            [clojure.spec.test :as stest]
             [cheshire.core :as json]
             [clojure.walk :as walk]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [clojure.spec.alpha :as s]
+            [clojure.spec.test.alpha :as stest]))
 
 (def OR (symbol "OR"))
 
@@ -159,7 +159,7 @@
 
 (defn- expand-with-symbol [spec sym args]
   (let [form (s/conform spec (cons sym args))
-        _ (when (= form :clojure.spec/invalid) (prn (s/explain-str spec (cons sym args))))
+        _ (when (= form ::s/invalid) (prn (s/explain-str spec (cons sym args))))
         _ (prn "FORM: " form)
 
         ]
@@ -178,7 +178,7 @@
 (declare emit)
 
 (defn expand-op [op-map]
-  (prn op-map)
+  (prn "op-map: " op-map)
   (let [emitted (vec (walk/postwalk emit (seq op-map)))]
     (list 'str "(" (list 'clojure.string/join " " emitted) ")")))
 
@@ -211,6 +211,9 @@
         (let [{:keys [operator rvalue lvalue]} (second node)]
           (str/join (str " " operator " ")
               (cons (emit lvalue) (map emit rvalue))))
+      (= (first node) :assignment-expression)
+        (let [{:keys [rvalue lvalue]} (second node)]
+          (list 'str lvalue "=" (emit rvalue)))
       (is-op-node? (first node)) (expand-op (second node))
       (is-fn-node? (first node)) (expand-fn (second node))
       :else (emit (second node)))
@@ -231,7 +234,7 @@
           ")")))
 
 (defn get-args-spec [spec]
-  (eval (cons 'clojure.spec/cat (drop 2 (rest (s/form spec))))))
+  (eval (cons 'clojure.spec.alpha/cat (drop 2 (rest (s/form spec))))))
 
 (defmacro FOR [& args] (op-expansion ::ops/for-op (cons 'FOR args)))
 (s/fdef FOR :args (get-args-spec ::ops/for-op) :ret string?)
@@ -269,8 +272,11 @@
 ;               :ret string?)
 
 (stest/instrument [`FOR
-                   `FLATTEN
                    `RETURN
                    `FILTER
+                   `SORT
+                   `LIMIT
+                   `LET
+                   `FLATTEN
                    `DOCUMENT
                    ])

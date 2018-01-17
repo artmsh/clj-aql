@@ -1,5 +1,5 @@
 (ns clj-aql.spec.base
-  (:require [clojure.spec :as s]))
+  (:require [clojure.spec.alpha :as s]))
 
 (s/def ::document (s/or :map map?
                         :fn :clj-aql.spec.fn/function))

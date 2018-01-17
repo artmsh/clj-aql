@@ -2,7 +2,7 @@
   (:require [clj-aql.spec.fn]
             [clj-aql.spec.op]
             [clojure.string :as str]
-            [clojure.spec :as s]))
+            [clojure.spec.alpha :as s]))
 
 (declare spec->doc)
 
@@ -31,10 +31,10 @@
 (defn spec->doc [form]
   (cond
     (keyword? form) (str "[" (name form) "](#" (name form) ")")
-    (= (first form) `clojure.spec/alt) (alt->doc (partition 2 (rest form)))
-    (= (first form) `clojure.spec/cat) (cat->doc (partition 2 (rest form)))
-    (= (first form) `clojure.spec/or) (or->doc (partition 2 (rest form)))
-    (= (first form) `clojure.spec/*) (star->doc (second form))))
+    (= (first form) `clojure.spec.alpha/alt) (alt->doc (partition 2 (rest form)))
+    (= (first form) `clojure.spec.alpha/cat) (cat->doc (partition 2 (rest form)))
+    (= (first form) `clojure.spec.alpha/or) (or->doc (partition 2 (rest form)))
+    (= (first form) `clojure.spec.alpha/*) (star->doc (second form))))
 
 (defn emit-spec-doc [spec-kw]
   (str "### " (name spec-kw) "\n"

@@ -1,6 +1,5 @@
 (ns clj-aql.spec.fn
-  (:require [clojure.spec :as s]
-            [clj-aql.spec.base :as base]))
+  (:require [clojure.spec.alpha :as s]))
 
 (s/def ::flatten-fn
   (s/cat :str-symbol #{'FLATTEN}
