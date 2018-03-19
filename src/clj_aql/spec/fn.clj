@@ -1,17 +1,18 @@
 (ns clj-aql.spec.fn
-  (:require [clojure.spec.alpha :as s]))
+  (:require [clojure.spec.alpha :as s]
+            [clj-aql.spec.base :as base]))
 
 (s/def ::flatten-fn
-  (s/cat :str-symbol #{'FLATTEN}
-         :literal-array (s/coll-of any? :kind vector)))
+    (s/cat :name #{'FLATTEN}
+           :array-expr ::base/array-expression))
 
 (s/def ::document-fn
-  (s/cat :str-symbol #{'DOCUMENT}
-         :collection (s/or :ref-string string?
-                           :ref-symbol symbol?)
-         :id (s/or
-               :literal-string string?
-               :ref-symbol-sequential symbol?)))
+    (s/cat :name #{'DOCUMENT}
+           :collection (s/alt :in/s string?
+                              :in/s-var symbol?)
+           :id (s/alt
+                 :in/s string?
+                 :in/vec-var symbol?)))
 
 ;(defmulti document-function first)
 ;(defmethod document-function 'ATTRIBUTES [_] (s/cat :name #{'ATTRIBUTES}
@@ -105,3 +106,5 @@
 (s/def ::function (s/alt
                     :flatten-fn ::flatten-fn
                     :document-fn ::document-fn))
+
+(s/def ::inner-function (s/spec :clj-aql.spec.fn/function))

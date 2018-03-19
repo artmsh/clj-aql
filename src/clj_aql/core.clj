@@ -160,9 +160,9 @@
 (defn- expand-with-symbol [spec sym args]
   (let [form (s/conform spec (cons sym args))
         _ (when (= form ::s/invalid) (prn (s/explain-str spec (cons sym args))))
-        _ (prn "FORM: " form)
+        _ (prn "FORM: " form)]
 
-        ]
+
     {:query (list 'apply 'str
                   (cons 'list (expand-clause1 form)))
      :args (into {} (for [n (tree-seq coll? seq args)
@@ -179,7 +179,7 @@
 
 (defn expand-op [op-map]
   ;(prn "op-map: " op-map)
-  (let [emitted (vec (walk/postwalk emit (seq op-map)))]
+  (let [emitted (vec (map emit (seq op-map)))]
     (list 'str "(" (list 'clojure.string/join " " emitted) ")")))
 
 (defn expand-fn [fn-map]
@@ -204,61 +204,67 @@
       (= (first node) :ref-symbol-tuple) (list 'clojure.string/join "," (second node))
       (= (first node) :kw) (name (second node))
       (= (first node) :ref-symbol-sequential) (list 'cheshire.core/generate-string (second node))
-      (= (first node) :binary-expression)
-        (let [{:keys [operator rvalue lvalue]} (second node)]
-          (str lvalue operator rvalue))
-      (= (first node) :multi-expression)
-        (let [{:keys [operator rvalue lvalue]} (second node)]
-          (str/join (str " " operator " ")
-              (cons (emit lvalue) (map emit rvalue))))
-      (= (first node) :assignment-expression)
-        (let [{:keys [rvalue lvalue]} (second node)]
-          (list 'str lvalue "=" (emit rvalue)))
+      (= (first node) :binary-expression) (let [{:keys [operator rvalue lvalue]} (second node)]
+                                            (str lvalue operator rvalue))
+      (= (first node) :multi-expression) (let [{:keys [operator rvalue lvalue]} (second node)]
+                                           (str/join (str " " operator " ")
+                                               (cons (emit lvalue) (map emit rvalue))))
+      (= (first node) :assignment-expression) (let [{:keys [rvalue lvalue]} (second node)]
+                                                (list 'str lvalue "=" (emit rvalue)))
       (is-op-node? (first node)) (expand-op (second node))
       (is-fn-node? (first node)) (expand-fn (second node))
       :else (emit (second node)))
     node))
 
 (defn op-expansion [spec form]
-  (let [exp (s/conform spec form)
-        ;_ (prn "op-exp: " exp)
-        emitted (map emit (seq exp))]
-    (list 'clojure.string/join " " (vec emitted))))
+  (if (s/valid? spec form)
+    (let [exp (s/conform spec (seq form))
+          _ (prn "op-exp: " exp)
+          emitted (map emit (seq exp))]
+      (list 'clojure.string/join " " (vec emitted)))
+    (s/explain spec form)))
+
 
 (defn fn-expansion [spec form fn]
-  (let [exp (s/conform spec form)
-        ;_ (prn exp)
-        emitted (map emit (seq exp))]
-    (list 'str (str fn) "("
-      (list 'clojure.string/join "," (vec emitted))
-          ")")))
+  (if (s/valid? spec (cons fn form))
+    (let [exp (s/conform spec (seq (cons fn form)))
+          ;_ (prn exp)
+          emitted (map emit (seq exp))]
+      (list 'str (str fn) "("
+        (list 'clojure.string/join "," (vec emitted)) ")"))
+    (s/explain spec (cons fn form))))
+
+(defn hlo-expansion [form]
+  (let [exp (s/conform ::ops/high-level-op form)
+        emitted (map emit (seq (second exp)))]
+    emitted))
 
 (defn get-args-spec [spec]
   (eval (cons 'clojure.spec.alpha/cat (drop 2 (rest (s/form spec))))))
 
 (defmacro FOR [& args] (op-expansion ::ops/for-op (cons 'FOR args)))
-(s/fdef FOR :args (get-args-spec ::ops/for-op) :ret string?)
+;(s/fdef FOR :args (get-args-spec ::ops/for-op) :ret string?)
 
 (defmacro RETURN [& args] (op-expansion ::ops/return-op (cons 'RETURN args)))
-(s/fdef RETURN :args (get-args-spec ::ops/return-op) :ret string?)
+;(s/fdef RETURN :args (get-args-spec ::ops/return-op) :ret string?)
 
 (defmacro FILTER [& args] (op-expansion ::ops/filter-op (cons 'FILTER args)))
-(s/fdef FILTER :args (get-args-spec ::ops/filter-op) :ret string?)
+;(s/fdef FILTER :args (get-args-spec ::ops/filter-op) :ret string?)
 
 (defmacro SORT [& args] (op-expansion ::ops/sort-op (cons 'SORT args)))
-(s/fdef SORT :args (get-args-spec ::ops/sort-op) :ret string?)
+;(s/fdef SORT :args (get-args-spec ::ops/sort-op) :ret string?)
 
 (defmacro LIMIT [& args] (op-expansion ::ops/limit-op (cons 'LIMIT args)))
-(s/fdef LIMIT :args (get-args-spec ::ops/limit-op) :ret string?)
+;(s/fdef LIMIT :args (get-args-spec ::ops/limit-op) :ret string?)
 
 (defmacro LET [& args] (op-expansion ::ops/let-op (cons 'LET args)))
-(s/fdef LET :args (get-args-spec ::ops/let-op) :ret string?)
+;(s/fdef LET :args (get-args-spec ::ops/let-op) :ret string?)
 
-(defmacro FLATTEN [& args] (fn-expansion (get-args-spec ::fns/flatten-fn) args 'FLATTEN))
-(s/fdef FLATTEN :args (get-args-spec ::fns/flatten-fn) :ret string?)
+(defmacro FLATTEN [& args] (fn-expansion ::fns/flatten-fn args 'FLATTEN))
+;(s/fdef FLATTEN :args (get-args-spec ::fns/flatten-fn) :ret string?)
 
-(defmacro DOCUMENT [& args] (fn-expansion (get-args-spec ::fns/document-fn) args 'DOCUMENT))
-(s/fdef DOCUMENT :args (get-args-spec ::fns/document-fn) :ret string?)
+(defmacro DOCUMENT [& args] (fn-expansion ::fns/document-fn args 'DOCUMENT))
+;(s/fdef DOCUMENT :args (get-args-spec ::fns/document-fn) :ret string?)
 
 ;(defmacro RETURN [& args] (expand-with-symbol :clj-aql.spec.op/return-op 'RETURN args))
 ;(defmacro INSERT [& args] (expand-with-symbol :clj-aql.spec.op/insert-op 'INSERT args))
@@ -271,12 +277,5 @@
 ;(s/fdef INSERT :args :clj-aql.spec.op/insert-op-args
 ;               :ret string?)
 
-(stest/instrument [`FOR
-                   `RETURN
-                   `FILTER
-                   `SORT
-                   `LIMIT
-                   `LET
-                   `FLATTEN
-                   `DOCUMENT
-                   ])
+#_(stest/instrument [`FOR `RETURN `FILTER `SORT `LIMIT `LET `FLATTEN `DOCUMENT])
+

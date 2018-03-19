@@ -9,8 +9,9 @@
 (defn pair->doc [[kw spec-form]]
   (case kw
     :kw (str/join " | " spec-form)
-    :ref-string "string-literal"
-    :ref-symbol "string-variable"
+    :in/s "string-literal"
+    :in/s-var "string-variable"
+    :in/vec-var "vector-variable"
     :ref-symbol-sequential "sequential-variable"
     :str-symbol (second (first spec-form))
     :literal-array "collection-literal"
@@ -29,6 +30,7 @@
   (str (str/join " | " (map pair->doc pairs))))
 
 (defn spec->doc [form]
+  (prn "form:" form)
   (cond
     (keyword? form) (str "[" (name form) "](#" (name form) ")")
     (= (first form) `clojure.spec.alpha/alt) (alt->doc (partition 2 (rest form)))

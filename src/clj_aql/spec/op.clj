@@ -15,47 +15,59 @@
 ; comma-sep expands inner content to [symb1], [symb2], [symb3]
 ; str-symbol: '.. to ..
 
-(s/def ::for-op (s/cat
-                  :str-symbol #{'FOR}
-                  :field (s/or :ref-string string?
-                               :ref-symbol symbol?)
-                  :kw #{:IN}
-                  :collection (s/or :ref-string string?
-                                    :for-op ::for-op
-                                    :ref-symbol symbol?
-                                    :fn ::fns/function
-                                    :literal-array (s/coll-of any? :kind vector?))
-                  :clauses (s/* ::high-level-op)))
+(s/def ::high-level-op (s/alt
+                         :operator/for ::for-op
+                         :operator/return ::return-op
+                         :operator/filter ::filter-op
+                         :operator/sort ::sort-op
+                         :operator/limit ::limit-op
+                         :operator/let ::let-op
+                         :operator/collect ::collect-op))
+
+(s/def ::for-op
+  (s/cat :name #{'FOR}
+         :field (s/alt :in/s string? :in/s-var symbol?)
+         :in #{:IN}
+         :collection (s/alt :in/s string?
+                            :in/fn (s/spec ::fns/function)
+                            :array-expr ::base/array-expression)
+         :clauses (s/+ (s/spec ::high-level-op))))
+
+(s/def ::bracket-for-op (s/spec ::for-op))
 
 (s/def ::return-op
-  (s/cat :str-symbol #{'RETURN}
-         :expression (s/or :ref-string string?
-                           :literal-map (s/map-of any? any?)
-                           :fn ::fns/function
-                           :for-op ::for-op)))
+  (s/cat :name #{'RETURN}
+         :expression (s/alt :in/s string?
+                            :expr ::base/any-expression)))
 
 (s/def ::filter-op
-  (s/cat :str-symbol #{'FILTER}
-         :condition (s/or :ref-symbol symbol?
-                          :expression ::base/filter-expression)))
+    (s/cat :name #{'FILTER}
+           :condition (s/alt :in/s symbol?
+                             :expression ::base/bool-expression)))
 
 (s/def ::sort-op
-  (s/cat :str-symbol #{'SORT}
-         :literal-tuple (s/+ string?)
-         :kw (s/? #{:ASC :DESC})))
+    (s/cat :name #{'SORT}
+           :in/tuple (s/+ string?)
+           :direction (s/? #{:ASC :DESC})))
 
 (s/def ::limit-op
-  (s/cat :str-symbol #{'LIMIT}
-         :args (s/alt :literal-tuple (s/+ number?)
-                      :ref-symbol-tuple (s/+ symbol?))))
+    (s/cat :name #{'LIMIT}
+           :args (s/alt :in/tuple (s/+ number?)
+                        :in/tuple-vars (s/+ symbol?))))
 
 (s/def ::let-op
-  (s/cat :str-symbol #{'LET}
-         :assignment-expression (s/cat :lvalue string?
-                                       :rvalue (s/or
-                                                 :ref-string string?
-                                                 :fn ::fns/function
-                                                 :for-op ::for-op))))
+    (s/cat :name #{'LET}
+           :in/assignment-expression (s/cat :in/s string?
+                                            :rvalue ::base/any-expression)))
+
+(s/def ::collect-op
+  (s/cat :name #{'COLLECT}
+         :in/assignment-expression (s/spec (s/cat :in/s string?
+                                                  :rvalue ::base/any-expression))
+         :into #{:INTO}
+         :groups-variable (s/alt :in/s string?)
+         :keep #{:KEEP}
+         :keep-variable (s/alt :in/s string?)))
 
 ;(s/def ::primitive-num (s/or
 ;                         :num number?
@@ -85,13 +97,6 @@
 ;    :primitive ::primitive-condition))
 ;
 ;(defmulti high-level-op first)
-(s/def ::high-level-op (s/alt
-                         :for-op ::for-op
-                         :return-op ::return-op
-                         :filter-op ::filter-op
-                         :sort-op ::sort-op
-                         :limit-op ::limit-op
-                         :let-op ::let-op))
 ;
 ;(s/def ::for-op-doc-args
 ;  (s/cat
