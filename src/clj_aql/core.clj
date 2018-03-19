@@ -42,8 +42,8 @@
     :string (list (str "\"" val "\""))
     :symbol (list (str val))
     :quoted [(str "@" (:val val))]
-    :map (expand-map val expand-expression true)
-    :map-s (expand-map val expand-expression false)
+    :map (expand-map val expand-any true)
+    :map-s (expand-map val expand-any false)
     :fn (expand-fn val)
     :for-op (list "(" (expand-clause1 val) ")")
     :varargs (list (clojure.string/join "," (map (comp (partial clojure.string/join "") expand-any) val)))
@@ -154,9 +154,10 @@
   (expand-clause (merge {:name name} args)))
 
 (defn- expand-with-symbol [spec sym args]
-  (let [form (s/conform spec (cons sym args))
-        _ (prn "FORM: " form)
-        ]
+  (let [form (s/conform spec (cons sym args))]
+        ;_ (prn "FORM: " form)
+
+
     {:query (list 'apply 'str
                   (cons 'list (expand-clause1 form)))
      :args (into {} (for [n (tree-seq coll? seq args)

@@ -1,4 +1,4 @@
-(defproject clj-aql "0.1.1-SNAPSHOT"
+(defproject clj-aql "0.1.1"
   :description "Clojure DSL for ArangoDB query language"
   :url "https://github.com/artmsh/clj-aql"
   :license {:name "Eclipse Public License"

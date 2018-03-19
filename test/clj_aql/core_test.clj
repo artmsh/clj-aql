@@ -113,14 +113,14 @@
   (testing "limit expression with variables"
     (is (= (limited-query 10 100)
            {:query "FOR u IN users\nLIMIT @o,@c\nRETURN u"
-            :args  {"o" 10 "c" 100}
-            })))
+            :args  {"o" 10 "c" 100}})))
+
   (testing "limit expression with count only (no offset)"
     (is (= (limited-query-no-offset 10)
            {:query "FOR u IN users\nLIMIT @c\nRETURN u"
-            :args  {"c" 10}
-            })))
-  )
+            :args  {"c" 10}}))))
+
+
 
 
 ; FOR u IN users
